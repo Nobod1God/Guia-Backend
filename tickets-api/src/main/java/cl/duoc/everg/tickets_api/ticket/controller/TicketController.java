@@ -1,12 +1,18 @@
 package cl.duoc.everg.tickets_api.ticket.controller;
 
 import cl.duoc.everg.tickets_api.ticket.dto.*;
+import cl.duoc.everg.tickets_api.ticket.filter.TicketFilter;
+import cl.duoc.everg.tickets_api.ticket.model.TicketStatus;
 import cl.duoc.everg.tickets_api.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -27,8 +33,20 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TicketResponse>> getAllTickets() {
-        return ResponseEntity.ok(ticketService.getAllTickets());
+    public ResponseEntity<Page<TicketResponse>> getTickets(
+            @RequestParam(required = false) TicketStatus status,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            Pageable pageable
+    ) {
+        TicketFilter filter = TicketFilter.builder()
+                .status(status)
+                .category(category)
+                .from(from)
+                .to(to)
+                .build();
+        return ResponseEntity.ok(ticketService.findTickets(filter, pageable));
     }
 
     @PutMapping("/{id}")

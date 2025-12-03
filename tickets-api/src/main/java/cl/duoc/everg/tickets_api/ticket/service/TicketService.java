@@ -1,9 +1,14 @@
 package cl.duoc.everg.tickets_api.ticket.service;
 
 import cl.duoc.everg.tickets_api.ticket.dto.*;
+import cl.duoc.everg.tickets_api.ticket.filter.TicketFilter;
+import cl.duoc.everg.tickets_api.ticket.filter.TicketSpecification;
 import cl.duoc.everg.tickets_api.ticket.model.Ticket;
 import cl.duoc.everg.tickets_api.ticket.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -36,11 +41,16 @@ public class TicketService {
         return mapToResponse(ticket);
     }
 
-    public List<TicketResponse> getAllTickets() {
-        return ticketRepository.findAll().stream()
-                .filter(t -> !t.isDeleted())
-                .map(this::mapToResponse)
-                .toList();
+    public Page<TicketResponse> findTickets(TicketFilter filter, Pageable pageable) {Specification<Ticket> spec =
+                Specification.where(TicketSpecification.notDeleted())
+                        .and(TicketSpecification.hasStatus(
+                                filter.getStatus() != null ? filter.getStatus().name() : null
+                        ))
+                        .and(TicketSpecification.hasCategory(filter.getCategory()))
+                        .and(TicketSpecification.createdAfter(filter.getFrom()))
+                        .and(TicketSpecification.createdBefore(filter.getTo()));
+        return ticketRepository.findAll(spec, pageable)
+                .map(this::mapToResponse);
     }
 
     public TicketResponse updateTicket(Long id, TicketUpdateRequest
